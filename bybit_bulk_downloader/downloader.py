@@ -26,7 +26,6 @@ class BybitBulkDownloader:
         """
         self._destination_dir = destination_dir
         self._data_type = data_type
-        self._save_path = None
 
     def _get_url_from_bybit(self):
         """
@@ -81,31 +80,32 @@ class BybitBulkDownloader:
         parts = url.split("/")
         parts.insert(3, "bybit_data")
         prefix = "/".join(parts[prefix_start:prefix_end])
-        print(prefix)
-        self._save_path = os.path.join(self._destination_dir, prefix)
 
-        # if not exists, create the directory
-        if not os.path.exists(self._save_path):
-            os.makedirs(self._save_path)
 
         # Download the file
-        print(f"[green]Downloading: {'/'.join(parts[prefix_start:])}[/green]")
-        response = requests.get(url, "/".join(parts[prefix_start:]))
-        with open("/".join(parts[prefix_start:]), "wb") as file:
+        filepath = os.path.join(str(self._destination_dir) + "/" + "/".join(parts[prefix_start:]))
+        filedir = os.path.dirname(filepath)
+        # if not exists, create the directory
+        if not os.path.exists(filedir):
+            os.makedirs(filedir)
+
+        print(f"[green]Downloading: {filepath}[/green]")
+        response = requests.get(url, filepath)
+        with open(filepath, "wb") as file:
             for chunk in response.iter_content(chunk_size=8192):
                 file.write(chunk)
 
         # Decompress the file
-        print(f"[green]Unzipped: {'/'.join(parts[prefix_start:])}[/green]")
-        with gzip.open("/".join(parts[prefix_start:]), mode="rb") as gzip_file:
+        print(f"[green]Unzipped: {filepath}[/green]")
+        with gzip.open(filepath, mode="rb") as gzip_file:
             with open(
-                "/".join(parts[prefix_start:]).replace(".gz", ""), mode="wb"
+                filepath.replace(".gz", ""), mode="wb"
             ) as decompressed_file:
                 shutil.copyfileobj(gzip_file, decompressed_file)
 
         # Delete the compressed file
-        os.remove("/".join(parts[prefix_start:]))
-        print(f"[green]Deleted: {'/'.join(parts[prefix_start:])}[/green]")
+        os.remove(filepath)
+        print(f"[green]Deleted: {filepath}[/green]")
 
     def run_download(self):
         """

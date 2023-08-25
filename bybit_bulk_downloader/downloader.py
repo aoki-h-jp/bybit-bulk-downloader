@@ -1,28 +1,23 @@
 """
 bybit_bulk_downloader
 """
+import gzip
 # import standard libraries
 import os
-from concurrent.futures import ThreadPoolExecutor
-import gzip
 import shutil
+from concurrent.futures import ThreadPoolExecutor
 
 # import third-party libraries
 import requests
+from bs4 import BeautifulSoup
 from rich import print
 from rich.progress import track
-from bs4 import BeautifulSoup
 
 
 class BybitBulkDownloader:
     _CHUNK_SIZE = 20
     _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com/"
-    _DATA_TYPE = (
-        "kline_for_metatrader4",
-        "premium_index",
-        "spot_index",
-        "trading"
-    )
+    _DATA_TYPE = ("kline_for_metatrader4", "premium_index", "spot_index", "trading")
 
     def __init__(self, destination_dir=".", data_type="trading"):
         """
@@ -45,7 +40,9 @@ class BybitBulkDownloader:
         for link in soup.find_all("a"):
             link_sym = link.get("href")
             if self._data_type == "kline_for_metatrader4":
-                soup_year = BeautifulSoup(requests.get(url + link.get("href")).text, "html.parser")
+                soup_year = BeautifulSoup(
+                    requests.get(url + link.get("href")).text, "html.parser"
+                )
                 for link_year in soup_year.find_all("a"):
                     link_sym += link_year.get("href")
                     symbol_list.append(link_sym)
@@ -101,7 +98,9 @@ class BybitBulkDownloader:
         # Decompress the file
         print(f"[green]Unzipped: {'/'.join(parts[prefix_start:])}[/green]")
         with gzip.open("/".join(parts[prefix_start:]), mode="rb") as gzip_file:
-            with open("/".join(parts[prefix_start:]).replace(".gz", ""), mode="wb") as decompressed_file:
+            with open(
+                "/".join(parts[prefix_start:]).replace(".gz", ""), mode="wb"
+            ) as decompressed_file:
                 shutil.copyfileobj(gzip_file, decompressed_file)
 
         # Delete the compressed file
@@ -113,10 +112,12 @@ class BybitBulkDownloader:
         Execute download concurrently.
         :return: None
         """
-        print(f"[bold blue]Downloading {self._data_type} data from Bybit...[/bold blue]")
+        print(
+            f"[bold blue]Downloading {self._data_type} data from Bybit...[/bold blue]"
+        )
         for prefix_chunk in track(
-                self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),
-                description="Downloading",
+            self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),
+            description="Downloading",
         ):
             with ThreadPoolExecutor() as executor:
                 executor.map(self._download, prefix_chunk)

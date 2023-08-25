@@ -81,9 +81,10 @@ class BybitBulkDownloader:
         parts.insert(3, "bybit_data")
         prefix = "/".join(parts[prefix_start:prefix_end])
 
-
         # Download the file
-        filepath = os.path.join(str(self._destination_dir) + "/" + "/".join(parts[prefix_start:]))
+        filepath = os.path.join(
+            str(self._destination_dir) + "/" + "/".join(parts[prefix_start:])
+        )
         filedir = os.path.dirname(filepath)
         # if not exists, create the directory
         if not os.path.exists(filedir):
@@ -98,9 +99,7 @@ class BybitBulkDownloader:
         # Decompress the file
         print(f"[green]Unzipped: {filepath}[/green]")
         with gzip.open(filepath, mode="rb") as gzip_file:
-            with open(
-                filepath.replace(".gz", ""), mode="wb"
-            ) as decompressed_file:
+            with open(filepath.replace(".gz", ""), mode="wb") as decompressed_file:
                 shutil.copyfileobj(gzip_file, decompressed_file)
 
         # Delete the compressed file

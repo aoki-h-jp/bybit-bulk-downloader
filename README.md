@@ -9,7 +9,7 @@ A Python library to efficiently and concurrently download historical data files 
 ## Installation
 
 ```bash
-pip install git+https://github.com/aoki-h-jp/binance-bulk-downloader
+pip install git+https://github.com/aoki-h-jp/bybit-bulk-downloader
 ```
 
 ## Usage
@@ -48,6 +48,12 @@ downloader = BybitBulkDownloader(data_type='trading')
 downloader.run_download()
 ```
 
+## pytest
+
+```bash
+python -m pytest
+```
+
 ## Available data types
 ✅: Implemented and tested. ❌: Not available on bybit.
 
@@ -55,8 +61,8 @@ downloader.run_download()
 
 | data_type           | spot | futures   |
 | :------------------ | :--: | :--: |
-| kline_for_metatrader4           | ✅   | ✅   |
-| premium_index           | ✅   | ✅   |
+| kline_for_metatrader4           | ✅   | ❌   |
+| premium_index           | ❌   | ✅   |
 | spot_index           | ✅   | ❌   |
 | trading | ❌   | ✅   |
 

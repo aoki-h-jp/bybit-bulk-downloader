@@ -1,7 +1,7 @@
 # bybit-bulk-downloader
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110//)
-[![Format code](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/Formatter.yml/badge.svg?branch=main)](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/Formatter.yml)
-[![pytest](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/pytest.yaml/badge.svg)](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/pytest.yaml)
+[![Format code](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/Formatter.yml/badge.svg)](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/Formatter.yml)
+[![Run pytest on all branches](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/pytest.yaml/badge.svg)](https://github.com/aoki-h-jp/bybit-bulk-downloader/actions/workflows/pytest.yaml)
 
 ## ## Python library for bulk downloading bybit historical data
 A Python library to efficiently and concurrently download historical data files from bybit. Supports all asset types (spot, USDT Perpetual, Inverse Perpetual &amp; Inverse Futures).

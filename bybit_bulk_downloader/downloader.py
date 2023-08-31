@@ -16,7 +16,7 @@ from rich.progress import track
 
 class BybitBulkDownloader:
     _CHUNK_SIZE = 20
-    _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com/"
+    _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com"
     _DATA_TYPE = ("kline_for_metatrader4", "premium_index", "spot_index", "trading")
 
     def __init__(self, destination_dir=".", data_type="trading"):
@@ -32,7 +32,7 @@ class BybitBulkDownloader:
         Get the URL of the data to download from Bybit.
         :return: list of URLs to download.
         """
-        url = "https://public.bybit.com/" + self._data_type + "/"
+        url = self._BYBIT_DATA_DOWNLOAD_BASE_URL + "/" + self._data_type + "/"
         response = requests.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
         symbol_list = []
@@ -79,7 +79,6 @@ class BybitBulkDownloader:
         # Create the destination directory if it does not exist
         parts = url.split("/")
         parts.insert(3, "bybit_data")
-        prefix = "/".join(parts[prefix_start:prefix_end])
 
         # Download the file
         filepath = os.path.join(

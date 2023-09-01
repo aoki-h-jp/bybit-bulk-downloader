@@ -26,6 +26,7 @@ class BybitBulkDownloader:
         """
         self._destination_dir = destination_dir
         self._data_type = data_type
+        self.downloaded_list = []
 
     def _get_url_from_bybit(self):
         """
@@ -80,6 +81,7 @@ class BybitBulkDownloader:
         parts = url.split("/")
         parts.insert(3, "bybit_data")
         prefix = "/".join(parts[prefix_start:prefix_end])
+        self.downloaded_list.append(prefix)
 
         # Download the file
         filepath = os.path.join(
@@ -120,3 +122,4 @@ class BybitBulkDownloader:
         ):
             with ThreadPoolExecutor() as executor:
                 executor.map(self._download, prefix_chunk)
+            self.downloaded_list.extend(prefix_chunk)

@@ -8,19 +8,25 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
+import pandas as pd
 # import third-party libraries
 import requests
 from bs4 import BeautifulSoup
+from pybit.unified_trading import HTTP
 from rich import print
 from rich.progress import track
-from pybit.unified_trading import HTTP
-import pandas as pd
 
 
 class BybitBulkDownloader:
     _CHUNK_SIZE = 20
     _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com"
-    _DATA_TYPE = ("kline_for_metatrader4", "premium_index", "spot_index", "trading", "fundingRate")
+    _DATA_TYPE = (
+        "kline_for_metatrader4",
+        "premium_index",
+        "spot_index",
+        "trading",
+        "fundingRate",
+    )
 
     def __init__(self, destination_dir=".", data_type="trading"):
         """
@@ -145,7 +151,7 @@ class BybitBulkDownloader:
         ]
         # Get all available symbols
         for sym in track(
-                s_list, description="Downloading funding rate data from Bybit"
+            s_list, description="Downloading funding rate data from Bybit"
         ):
             # Get funding rate history
             df = pd.DataFrame(columns=["fundingRate", "fundingRateTimestamp", "symbol"])
@@ -159,11 +165,11 @@ class BybitBulkDownloader:
                     datetime.strptime(end_time, "%Y-%m-%d").timestamp() * 1000
                 )
                 for d in self.session.get_funding_rate_history(
-                        category="linear",
-                        symbol=sym,
-                        limit=200,
-                        startTime=start_time,
-                        endTime=end_time,
+                    category="linear",
+                    symbol=sym,
+                    limit=200,
+                    startTime=start_time,
+                    endTime=end_time,
                 )["result"]["list"]:
                     df.loc[len(df)] = d
 

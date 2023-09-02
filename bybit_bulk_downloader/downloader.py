@@ -6,10 +6,13 @@ import gzip
 import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta
 
+import pandas as pd
 # import third-party libraries
 import requests
 from bs4 import BeautifulSoup
+from pybit.unified_trading import HTTP
 from rich import print
 from rich.progress import track
 
@@ -17,7 +20,13 @@ from rich.progress import track
 class BybitBulkDownloader:
     _CHUNK_SIZE = 20
     _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com"
-    _DATA_TYPE = ("kline_for_metatrader4", "premium_index", "spot_index", "trading")
+    _DATA_TYPE = (
+        "kline_for_metatrader4",
+        "premium_index",
+        "spot_index",
+        "trading",
+        "fundingRate",
+    )
 
     def __init__(self, destination_dir=".", data_type="trading"):
         """
@@ -26,7 +35,7 @@ class BybitBulkDownloader:
         """
         self._destination_dir = destination_dir
         self._data_type = data_type
-        self.downloaded_list = []
+        self.session = HTTP()
 
     def _get_url_from_bybit(self):
         """
@@ -81,7 +90,6 @@ class BybitBulkDownloader:
         parts = url.split("/")
         parts.insert(3, "bybit_data")
         prefix = "/".join(parts[prefix_start:prefix_end])
-        self.downloaded_list.append(prefix)
 
         # Download the file
         filepath = os.path.join(
@@ -108,6 +116,73 @@ class BybitBulkDownloader:
         os.remove(filepath)
         print(f"[green]Deleted: {filepath}[/green]")
 
+    @staticmethod
+    def generate_dates_until_today(start_year, start_month) -> list:
+        """
+        Generate dates until today
+        :param start_year:
+        :param start_month:
+        :return: list of dates
+        """
+        start_date = datetime(start_year, start_month, 1)
+        end_date = datetime.today()
+
+        output = []
+        while start_date <= end_date:
+            next_date = start_date + timedelta(days=60)  # Roughly two months
+            if next_date > end_date:
+                next_date = end_date
+            output.append(
+                f"{start_date.strftime('%Y-%m-%d')} {next_date.strftime('%Y-%m-%d')}"
+            )
+            start_date = next_date + timedelta(days=1)
+
+        return output
+
+    def _download_fundingrate(self):
+        """
+        Download funding rate data from Bybit
+        """
+        s_list = [
+            d["symbol"]
+            for d in self.session.get_tickers(category="linear")["result"]["list"]
+            if d["symbol"][-4:] == "USDT"
+        ]
+        if not os.path.exists(f"{self._destination_dir}/bybit_data/fundingRate"):
+            os.makedirs(f"{self._destination_dir}/bybit_data/fundingRate")
+        # Get all available symbols
+        for sym in track(
+            s_list, description="Downloading funding rate data from Bybit"
+        ):
+            # Get funding rate history
+            df = pd.DataFrame(columns=["fundingRate", "fundingRateTimestamp", "symbol"])
+            for dt in self.generate_dates_until_today(2021, 1):
+                start_time, end_time = dt.split(" ")
+                # Convert to timestamp (ms)
+                start_time = int(
+                    datetime.strptime(start_time, "%Y-%m-%d").timestamp() * 1000
+                )
+                end_time = int(
+                    datetime.strptime(end_time, "%Y-%m-%d").timestamp() * 1000
+                )
+                for d in self.session.get_funding_rate_history(
+                    category="linear",
+                    symbol=sym,
+                    limit=200,
+                    startTime=start_time,
+                    endTime=end_time,
+                )["result"]["list"]:
+                    df.loc[len(df)] = d
+
+            df["fundingRateTimestamp"] = pd.to_datetime(
+                df["fundingRateTimestamp"].astype(float) * 1000000
+            )
+            df["fundingRate"] = df["fundingRate"].astype(float)
+            df = df.sort_values("fundingRateTimestamp")
+
+            # Save to csv
+            df.to_csv(f"{self._destination_dir}/bybit_data/fundingRate/{sym}.csv")
+
     def run_download(self):
         """
         Execute download concurrently.
@@ -116,10 +191,12 @@ class BybitBulkDownloader:
         print(
             f"[bold blue]Downloading {self._data_type} data from Bybit...[/bold blue]"
         )
-        for prefix_chunk in track(
-            self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),
-            description="Downloading",
-        ):
-            with ThreadPoolExecutor() as executor:
-                executor.map(self._download, prefix_chunk)
-            self.downloaded_list.extend(prefix_chunk)
+        if self._data_type == "fundingRate":
+            self._download_fundingrate()
+        else:
+            for prefix_chunk in track(
+                self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),
+                description="Downloading",
+            ):
+                with ThreadPoolExecutor() as executor:
+                    executor.map(self._download, prefix_chunk)

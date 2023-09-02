@@ -84,7 +84,6 @@ class BybitBulkDownloader:
         parts = url.split("/")
         parts.insert(3, "bybit_data")
         prefix = "/".join(parts[prefix_start:prefix_end])
-        self.downloaded_list.append(prefix)
 
         # Download the file
         filepath = os.path.join(
@@ -143,6 +142,8 @@ class BybitBulkDownloader:
             for d in self.session.get_tickers(category="linear")["result"]["list"]
             if d["symbol"][-4:] == "USDT"
         ]
+        if not os.path.exists(f"{self._destination_dir}/bybit_data/fundingRate"):
+            os.makedirs(f"{self._destination_dir}/bybit_data/fundingRate")
         # Get all available symbols
         for sym in track(
                 s_list, description="Downloading funding rate data from Bybit"
@@ -174,7 +175,7 @@ class BybitBulkDownloader:
             df = df.sort_values("fundingRateTimestamp")
 
             # Save to csv
-            df.to_csv(f"bybit_fundingrate/{sym}.csv")
+            df.to_csv(f"{self._destination_dir}/bybit_data/fundingRate/{sym}.csv")
 
     def run_download(self):
         """

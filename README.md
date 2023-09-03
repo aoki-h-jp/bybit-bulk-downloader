@@ -48,6 +48,23 @@ downloader = BybitBulkDownloader(data_type='trading')
 downloader.run_download()
 ```
 
+### Download all fundingRate data
+
+```python
+from bybit_bulk_downloader.downloader import BybitBulkDownloader
+
+downloader = BybitBulkDownloader(data_type='fundingRate')
+downloader.run_download()
+```
+
+### Download all klines data
+
+```python
+from bybit_bulk_downloader.downloader import BybitBulkDownloader
+
+downloader = BybitBulkDownloader(data_type='klines')
+downloader.run_download()
+```
 ## pytest
 
 ```bash
@@ -65,6 +82,8 @@ python -m pytest
 | premium_index           | ❌   | ✅   |
 | spot_index           | ✅   | ❌   |
 | trading | ❌   | ✅   |
+| fundingRate | ❌   | ✅   |
+| klines | 🚧   | ✅   |
 
 ## If you want to report a bug or request a feature
 Please create an issue on this repository!

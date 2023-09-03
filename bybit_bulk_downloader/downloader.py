@@ -26,7 +26,7 @@ class BybitBulkDownloader:
         "spot_index",
         "trading",
         "fundingRate",
-        "klines"
+        "klines",
     )
 
     def __init__(self, destination_dir=".", data_type="trading"):
@@ -188,7 +188,9 @@ class BybitBulkDownloader:
             df.to_csv(f"{self._destination_dir}/bybit_data/fundingRate/{sym}.csv")
 
     @staticmethod
-    def generate_dates_by_minutes_limited(start_year, start_month, interval_minutes) -> (list, list):
+    def generate_dates_by_minutes_limited(
+        start_year, start_month, interval_minutes
+    ) -> (list, list):
         start_date = datetime(start_year, start_month, 1)
         end_date = datetime.today()
 
@@ -223,23 +225,35 @@ class BybitBulkDownloader:
                 ]
             )
             for d in self.session.get_kline(
-                    category="linear",
-                    symbol=symbol,
-                    interval="1",
-                    limit=1000,
-                    startTime=int(start_time.timestamp()) * 1000,
-                    endTime=start_time + timedelta(minutes=1000),
+                category="linear",
+                symbol=symbol,
+                interval="1",
+                limit=1000,
+                startTime=int(start_time.timestamp()) * 1000,
+                endTime=start_time + timedelta(minutes=1000),
             )["result"]["list"]:
                 df_tmp.loc[len(df_tmp)] = d
 
-            df_tmp["startTime"] = pd.to_datetime(df_tmp["startTime"].astype(float) * 1000000)
+            df_tmp["startTime"] = pd.to_datetime(
+                df_tmp["startTime"].astype(float) * 1000000
+            )
             df_tmp = df_tmp.sort_values("startTime")
-            save_path = "/".join([self._destination_dir, "bybit_data", "klines", symbol, str(int(start_time.timestamp())) + ".csv"])
+            save_path = "/".join(
+                [
+                    self._destination_dir,
+                    "bybit_data",
+                    "klines",
+                    symbol,
+                    str(int(start_time.timestamp())) + ".csv",
+                ]
+            )
             print(f"[green]Saving: {save_path}[/green]")
             df_tmp.to_csv(save_path)
 
         # the oldest data is 2020-03-25
-        for start_time_chunk in self.make_chunks(self.generate_dates_by_minutes_limited(2020, 3, 1000), self._CHUNK_SIZE):
+        for start_time_chunk in self.make_chunks(
+            self.generate_dates_by_minutes_limited(2020, 3, 1000), self._CHUNK_SIZE
+        ):
             print(f"[bold blue]Downloading: {symbol}[/bold blue]")
             print(start_time_chunk)
             with ThreadPoolExecutor() as executor:
@@ -258,11 +272,13 @@ class BybitBulkDownloader:
             ]
         )
         for file in os.listdir(f"{self._destination_dir}/bybit_data/klines/{symbol}"):
-            df_tmp = pd.read_csv(f"{self._destination_dir}/bybit_data/klines/{symbol}/{file}")
+            df_tmp = pd.read_csv(
+                f"{self._destination_dir}/bybit_data/klines/{symbol}/{file}"
+            )
             df = pd.concat([df, df_tmp])
             os.remove(f"{self._destination_dir}/bybit_data/klines/{symbol}/{file}")
         df = df.sort_values("startTime")
-        df = df.drop_duplicates(subset=['startTime'])
+        df = df.drop_duplicates(subset=["startTime"])
         df.to_csv(f"{self._destination_dir}/bybit_data/klines/{symbol}/1m.csv")
 
     def download_klines(self, symbol):
@@ -284,7 +300,9 @@ class BybitBulkDownloader:
                 for d in self.session.get_tickers(category="linear")["result"]["list"]
                 if d["symbol"][-4:] == "USDT"
             ]
-            for symbol in track(s_list, description="Downloading klines data from Bybit"):
+            for symbol in track(
+                s_list, description="Downloading klines data from Bybit"
+            ):
                 self.download_klines(symbol)
         else:
             for prefix_chunk in track(

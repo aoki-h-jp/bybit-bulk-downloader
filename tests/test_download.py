@@ -15,7 +15,12 @@ def dynamic_test_params():
     Generate params for tests
     :return:
     """
-    for data_type in ["kline_for_metatrader4", "premium_index", "spot_index", "trading"]:
+    for data_type in [
+        "kline_for_metatrader4",
+        "premium_index",
+        "spot_index",
+        "trading",
+    ]:
         yield pytest.param(data_type)
 
 

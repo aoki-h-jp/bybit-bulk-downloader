@@ -15,7 +15,12 @@ def dynamic_test_params():
     Generate params for tests
     :return:
     """
-    for data_type in BybitBulkDownloader._DATA_TYPE:
+    for data_type in [
+        "kline_for_metatrader4",
+        "premium_index",
+        "spot_index",
+        "trading",
+    ]:
         yield pytest.param(data_type)
 
 
@@ -33,7 +38,7 @@ def test_download(tmpdir, data_type):
     )
     if data_type == "kline_for_metatrader4":
         single_download_url = "https://public.bybit.com/kline_for_metatrader4/ADAUSDT/2022/ADAUSDT_15_2022-09-01_2022-09-30.csv.gz"
-        downloader._download(single_download_url)
+        downloader.download(single_download_url)
         # If exists csv file on destination dir, test is passed.
         assert os.path.exists(
             os.path.join(
@@ -45,7 +50,7 @@ def test_download(tmpdir, data_type):
 
     elif data_type == "premium_index":
         single_download_url = "https://public.bybit.com/premium_index/ADAUSD/ADAUSD2022-03-24_premium_index.csv.gz"
-        downloader._download(single_download_url)
+        downloader.download(single_download_url)
         # If exists csv file on destination dir, test is passed.
         assert os.path.exists(
             os.path.join(
@@ -57,7 +62,7 @@ def test_download(tmpdir, data_type):
 
     elif data_type == "spot_index":
         single_download_url = "https://public.bybit.com/spot_index/ADAUSD/ADAUSD2022-03-24_index_price.csv.gz"
-        downloader._download(single_download_url)
+        downloader.download(single_download_url)
         # If exists csv file on destination dir, test is passed.
         assert os.path.exists(
             os.path.join(
@@ -67,7 +72,7 @@ def test_download(tmpdir, data_type):
 
     elif data_type == "trading":
         single_download_url = "https://public.bybit.com/trading/10000LADYSUSDT/10000LADYSUSDT2023-05-11.csv.gz"
-        downloader._download(single_download_url)
+        downloader.download(single_download_url)
         # If exists csv file on destination dir, test is passed.
         print(
             os.path.join(

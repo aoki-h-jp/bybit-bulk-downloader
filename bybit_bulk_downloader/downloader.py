@@ -29,7 +29,9 @@ class BybitBulkDownloader:
         "klines",
     )
 
-    def __init__(self, destination_dir=".", data_type="trading", klines_category="linear"):
+    def __init__(
+        self, destination_dir=".", data_type="trading", klines_category="linear"
+    ):
         """
         :param destination_dir: Directory to save the downloaded data.
         :param data_type: Data type to download. Available data types are: "kline_for_metatrader4", "premium_index", "spot_index", "trading", "fundingRate", "klines".
@@ -211,8 +213,12 @@ class BybitBulkDownloader:
         Download klines from Bybit
         :param symbol: symbol
         """
-        if not os.path.exists(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"):
-            os.makedirs(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}")
+        if not os.path.exists(
+            f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
+        ):
+            os.makedirs(
+                f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
+            )
 
         def __download(start_time: datetime):
             df_tmp = pd.DataFrame(
@@ -258,7 +264,9 @@ class BybitBulkDownloader:
         df_init_path = sorted(
             [
                 f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/{file}"
-                for file in os.listdir(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}")
+                for file in os.listdir(
+                    f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
+                )
             ]
         )[0]
         df_init = pd.read_csv(df_init_path)
@@ -266,7 +274,10 @@ class BybitBulkDownloader:
         start_date = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S").date()
 
         for start_time_chunk in self.make_chunks(
-            self.generate_dates_by_minutes_limited(start_date.year, start_date.month, start_date.day, 1000), self._CHUNK_SIZE
+            self.generate_dates_by_minutes_limited(
+                start_date.year, start_date.month, start_date.day, 1000
+            ),
+            self._CHUNK_SIZE,
         ):
             print(f"[bold blue]Downloading: {symbol}[/bold blue]")
             print(start_time_chunk)
@@ -285,15 +296,21 @@ class BybitBulkDownloader:
                 "turnover",
             ]
         )
-        for file in os.listdir(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"):
+        for file in os.listdir(
+            f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
+        ):
             df_tmp = pd.read_csv(
                 f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/{file}"
             )
             df = pd.concat([df, df_tmp])
-            os.remove(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/{file}")
+            os.remove(
+                f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/{file}"
+            )
         df = df.sort_values("startTime")
         df = df.drop_duplicates(subset=["startTime"])
-        df.to_csv(f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/1m.csv")
+        df.to_csv(
+            f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/1m.csv"
+        )
 
     def download_klines(self, symbol: str):
         self._download_klines(symbol)
@@ -311,7 +328,9 @@ class BybitBulkDownloader:
         elif self._data_type == "klines":
             s_list = [
                 d["symbol"]
-                for d in self.session.get_tickers(category=self._klines_category)["result"]["list"]
+                for d in self.session.get_tickers(category=self._klines_category)[
+                    "result"
+                ]["list"]
                 if d["symbol"][-4:] == "USDT"
             ]
             for symbol in track(

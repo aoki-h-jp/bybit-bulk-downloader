@@ -63,7 +63,7 @@ downloader.run_download()
 from bybit_bulk_downloader.downloader import BybitBulkDownloader
 
 downloader = BybitBulkDownloader(data_type='klines')
-downloader.run_download()
+downloader.run_download(interval='1')
 ```
 ## pytest
 

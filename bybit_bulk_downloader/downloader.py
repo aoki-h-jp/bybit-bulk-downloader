@@ -18,6 +18,9 @@ from rich.progress import track
 
 
 class BybitBulkDownloader:
+    """
+    Bulk downloader for Bybit data.
+    """
     _CHUNK_SIZE = 20
     _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com"
     _DATA_TYPE = (
@@ -122,6 +125,9 @@ class BybitBulkDownloader:
         print(f"[green]Deleted: {filepath}[/green]")
 
     def download(self, url: str):
+        """
+        Download the file.
+        """
         self._download(url)
 
     @staticmethod
@@ -193,25 +199,44 @@ class BybitBulkDownloader:
 
     @staticmethod
     def generate_dates_by_minutes_limited(
-        start_year: int, start_month: int, start_day: int, interval_minutes=1000
+        start_date: datetime.date, interval_minutes=1000
     ) -> (list, list):
-        start_date = datetime(start_year, start_month, start_day)
+        """
+        Generate dates by minutes (limited to 1000 minutes)
+        :param start_date: The date of the start
+        :param interval_minutes: Interval in minutes
+        :return:
+        """
+        start_date = datetime(start_date.year, start_date.month, start_date.day)
         end_date = datetime.today()
 
-        # Generating the list
-        date_list_1000min = []
+        date_list = []
         current_date = start_date
         while current_date <= end_date:
-            date_list_1000min.append(current_date)
+            date_list.append(current_date)
             current_date += timedelta(minutes=interval_minutes)
 
-        start_dt = date_list_1000min[:-1]
-        return start_dt
+        return date_list
 
-    def _download_klines(self, symbol: str):
+    def _download_klines(self, symbol: str, interval: str = "1"):
         """
         Download klines from Bybit
         :param symbol: symbol
+        :param interval: interval
+        Example of interval:
+            1: 1m
+            3: 3m
+            5: 5m
+            15: 15m
+            30: 30m
+            60: 1h
+            120: 2h
+            240: 4h
+            360: 6h
+            720: 12h
+            D: 1d
+            W: 1w
+            M: 1M
         """
         if not os.path.exists(
             f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
@@ -219,6 +244,36 @@ class BybitBulkDownloader:
             os.makedirs(
                 f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}"
             )
+
+        def __convert_to_int_interval(interval: str) -> int:
+            if interval == "1":
+                return 1
+            elif interval == "3":
+                return 3
+            elif interval == "5":
+                return 5
+            elif interval == "15":
+                return 15
+            elif interval == "30":
+                return 30
+            elif interval == "60":
+                return 60
+            elif interval == "120":
+                return 120
+            elif interval == "240":
+                return 240
+            elif interval == "360":
+                return 360
+            elif interval == "720":
+                return 720
+            elif interval == "D":
+                return 1440
+            elif interval == "W":
+                return 1440*7
+            elif interval == "M":
+                return 1440*30
+            else:
+                raise ValueError("Invalid interval")
 
         def __download(start_time: datetime):
             df_tmp = pd.DataFrame(
@@ -235,10 +290,10 @@ class BybitBulkDownloader:
             for d in self.session.get_kline(
                 category=self._klines_category,
                 symbol=symbol,
-                interval="1",
+                interval=interval,
                 limit=1000,
                 startTime=int(start_time.timestamp()) * 1000,
-                endTime=start_time + timedelta(minutes=1000),
+                endTime=start_time + timedelta(minutes=__convert_to_int_interval(interval) * 1000),
             )["result"]["list"]:
                 df_tmp.loc[len(df_tmp)] = d
 
@@ -274,9 +329,7 @@ class BybitBulkDownloader:
         start_date = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S").date()
 
         for start_time_chunk in self.make_chunks(
-            self.generate_dates_by_minutes_limited(
-                start_date.year, start_date.month, start_date.day, 1000
-            ),
+            self.generate_dates_by_minutes_limited(start_date, __convert_to_int_interval(interval) * 1000),
             self._CHUNK_SIZE,
         ):
             print(f"[bold blue]Downloading: {symbol}[/bold blue]")
@@ -309,15 +362,21 @@ class BybitBulkDownloader:
         df = df.sort_values("startTime")
         df = df.drop_duplicates(subset=["startTime"])
         df.to_csv(
-            f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/1m.csv"
+            f"{self._destination_dir}/bybit_data/klines/{self._klines_category}/{symbol}/{interval}.csv"
         )
 
-    def download_klines(self, symbol: str):
-        self._download_klines(symbol)
+    def download_klines(self, symbol: str, interval: str = "1"):
+        """
+        Download klines from Bybit
+        :param symbol: symbol
+        :param interval: interval
+        """
+        self._download_klines(symbol, interval)
 
-    def run_download(self):
+    def run_download(self, interval: str = "1"):
         """
         Execute download concurrently.
+        :param interval: interval
         :return: None
         """
         print(
@@ -336,7 +395,7 @@ class BybitBulkDownloader:
             for symbol in track(
                 s_list, description="Downloading klines data from Bybit"
             ):
-                self.download_klines(symbol)
+                self.download_klines(symbol, interval)
         else:
             for prefix_chunk in track(
                 self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),

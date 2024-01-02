@@ -21,6 +21,7 @@ class BybitBulkDownloader:
     """
     Bulk downloader for Bybit data.
     """
+
     _CHUNK_SIZE = 20
     _BYBIT_DATA_DOWNLOAD_BASE_URL = "https://public.bybit.com"
     _DATA_TYPE = (
@@ -269,9 +270,9 @@ class BybitBulkDownloader:
             elif interval == "D":
                 return 1440
             elif interval == "W":
-                return 1440*7
+                return 1440 * 7
             elif interval == "M":
-                return 1440*30
+                return 1440 * 30
             else:
                 raise ValueError("Invalid interval")
 
@@ -293,7 +294,8 @@ class BybitBulkDownloader:
                 interval=interval,
                 limit=1000,
                 startTime=int(start_time.timestamp()) * 1000,
-                endTime=start_time + timedelta(minutes=__convert_to_int_interval(interval) * 1000),
+                endTime=start_time
+                + timedelta(minutes=__convert_to_int_interval(interval) * 1000),
             )["result"]["list"]:
                 df_tmp.loc[len(df_tmp)] = d
 
@@ -329,7 +331,9 @@ class BybitBulkDownloader:
         start_date = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S").date()
 
         for start_time_chunk in self.make_chunks(
-            self.generate_dates_by_minutes_limited(start_date, __convert_to_int_interval(interval) * 1000),
+            self.generate_dates_by_minutes_limited(
+                start_date, __convert_to_int_interval(interval) * 1000
+            ),
             self._CHUNK_SIZE,
         ):
             print(f"[bold blue]Downloading: {symbol}[/bold blue]")

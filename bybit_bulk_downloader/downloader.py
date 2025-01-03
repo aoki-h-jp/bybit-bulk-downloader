@@ -1,6 +1,7 @@
 """
 bybit_bulk_downloader
 """
+
 import gzip
 # import standard libraries
 import os

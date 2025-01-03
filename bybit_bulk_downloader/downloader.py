@@ -107,41 +107,68 @@ class BybitBulkDownloader:
         :param url: URL
         :return: None
         """
-        with self.console.status(f"[bold blue]Processing {url}...", spinner="dots"):
-            prefix_start = 3
-            prefix_end = 6
+        try:
+            # Extract filename and path components from URL
+            url_parts = url.split("/")
+            filename = url_parts[-1]
+
+            # Construct the directory path based on data type
             if self._data_type == "kline_for_metatrader4":
-                prefix_end += 1
-            # Create the destination directory if it does not exist
-            parts = url.split("/")
-            parts.insert(3, "bybit_data")
+                # For kline data, maintain year in the path: symbol/year/file
+                symbol = url_parts[-3]
+                year = url_parts[-2]
+                target_dir = os.path.join(
+                    str(self._destination_dir),
+                    "bybit_data",
+                    self._data_type,
+                    symbol,
+                    year,
+                )
+            else:
+                # For other data types: symbol/file
+                symbol = url_parts[-2]
+                target_dir = os.path.join(
+                    str(self._destination_dir), "bybit_data", self._data_type, symbol
+                )
+
+            # Create directory if it doesn't exist
+            os.makedirs(target_dir, exist_ok=True)
+
+            # Set full file path
+            filepath = os.path.join(target_dir, filename)
+
+            self.console.print(f"[bold green]Downloading:[/bold green] {filepath}")
 
             # Download the file
-            filepath = os.path.join(
-                str(self._destination_dir) + "/" + "/".join(parts[prefix_start:])
-            )
-            filedir = os.path.dirname(filepath)
-            # if not exists, create the directory
-            if not os.path.exists(filedir):
-                os.makedirs(filedir)
+            response = requests.get(url)
+            if response.status_code != 200:
+                raise Exception(f"Failed to download {url}: {response.status_code}")
 
-            self.console.print(
-                Panel(f"[bold green]Downloading:[/bold green] {filepath}")
-            )
-            response = requests.get(url, filepath)
+            # Save compressed file
             with open(filepath, "wb") as file:
-                for chunk in response.iter_content(chunk_size=8192):
-                    file.write(chunk)
+                file.write(response.content)
 
             # Decompress the file
             self.console.print(f"[yellow]Unzipping:[/yellow] {filepath}")
-            with gzip.open(filepath, mode="rb") as gzip_file:
-                with open(filepath.replace(".gz", ""), mode="wb") as decompressed_file:
-                    shutil.copyfileobj(gzip_file, decompressed_file)
+            try:
+                with gzip.open(filepath, mode="rb") as gzip_file:
+                    decompressed_path = filepath.replace(".gz", "")
+                    with open(decompressed_path, mode="wb") as decompressed_file:
+                        shutil.copyfileobj(gzip_file, decompressed_file)
 
-            # Delete the compressed file
-            os.remove(filepath)
-            self.console.print(f"[dim]Cleaned up:[/dim] {filepath}")
+                # Delete the compressed file
+                os.remove(filepath)
+                self.console.print(f"[dim]Cleaned up:[/dim] {filepath}")
+            except Exception as e:
+                self.console.print(
+                    f"[red]Failed to decompress {filepath}: {str(e)}[/red]"
+                )
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                raise
+        except Exception as e:
+            self.console.print(f"[red]Error processing {url}: {str(e)}[/red]")
+            raise
 
     def download(self, url: str):
         """
@@ -204,3 +231,63 @@ class BybitBulkDownloader:
         self.console.print(
             "[bold green]Download completed successfully! ✨[/bold green]"
         )
+
+    def download_symbol(self, symbol: str):
+        """
+        Download data for a specific trading pair.
+        only for trading data
+        :param symbol: Trading pair symbol (e.g., "BTCUSDT")
+        """
+        if self._data_type != "trading":
+            raise ValueError(
+                "This method is only available for trading data. Please use run_download() for all data types."
+            )
+
+        url = f"{self._BYBIT_DATA_DOWNLOAD_BASE_URL}/{self._data_type}/{symbol}/"
+        self.console.print(f"[blue]Accessing URL: {url}[/blue]")
+
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        download_list = []
+        for link in soup.find_all("a"):
+            href = link.get("href")
+            if href and href.endswith(".gz"):
+                full_url = url + href
+                download_list.append(full_url)
+                self.console.print(f"[dim]Found file: {href}[/dim]")
+
+        if not download_list:
+            self.console.print(
+                f"[bold yellow]警告: {symbol}のデータが見つかりません[/bold yellow]"
+            )
+            return
+
+        self.console.print(
+            f"[green]Found {len(download_list)} files to download[/green]"
+        )
+
+        # Create the base directory structure
+        base_dir = os.path.join(
+            self._destination_dir, "bybit_data", self._data_type, symbol
+        )
+        os.makedirs(base_dir, exist_ok=True)
+        self.console.print(f"[blue]Created directory: {base_dir}[/blue]")
+
+        chunks = self.make_chunks(download_list, self._CHUNK_SIZE)
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=self.console,
+        ) as progress:
+            task = progress.add_task(
+                f"[cyan]Downloading {symbol}...", total=len(chunks)
+            )
+
+            for chunk in chunks:
+                with ThreadPoolExecutor() as executor:
+                    executor.map(self._download, chunk)
+                progress.advance(task)

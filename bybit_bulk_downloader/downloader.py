@@ -3,6 +3,7 @@ bybit_bulk_downloader
 """
 
 import gzip
+
 # import standard libraries
 import os
 import shutil
@@ -10,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
 import pandas as pd
+
 # import third-party libraries
 import requests
 from bs4 import BeautifulSoup
@@ -30,7 +32,6 @@ class BybitBulkDownloader:
         "premium_index",
         "spot_index",
         "trading",
-        "fundingRate",
         "klines",
     )
 
@@ -39,9 +40,14 @@ class BybitBulkDownloader:
     ):
         """
         :param destination_dir: Directory to save the downloaded data.
-        :param data_type: Data type to download. Available data types are: "kline_for_metatrader4", "premium_index", "spot_index", "trading", "fundingRate", "klines".
+        :param data_type: Data type to download. Available data types are: "kline_for_metatrader4", "premium_index", "spot_index", "trading", "klines".
         :param klines_category: Klines category to download. Available categories are: "linear". ("spot", "inverse" is not supported yet.)
         """
+        if data_type not in self._DATA_TYPE:
+            raise ValueError(
+                f"Invalid data_type: {data_type}. Available types are: {', '.join(self._DATA_TYPE)}"
+            )
+
         self._destination_dir = destination_dir
         self._data_type = data_type
         self._klines_category = klines_category
@@ -155,51 +161,6 @@ class BybitBulkDownloader:
 
         return output
 
-    def _download_fundingrate(self):
-        """
-        Download funding rate data from Bybit
-        """
-        s_list = [
-            d["symbol"]
-            for d in self.session.get_tickers(category="linear")["result"]["list"]
-            if d["symbol"][-4:] == "USDT"
-        ]
-        if not os.path.exists(f"{self._destination_dir}/bybit_data/fundingRate"):
-            os.makedirs(f"{self._destination_dir}/bybit_data/fundingRate")
-        # Get all available symbols
-        for sym in track(
-            s_list, description="Downloading funding rate data from Bybit"
-        ):
-            # Get funding rate history
-            df = pd.DataFrame(columns=["fundingRate", "fundingRateTimestamp", "symbol"])
-            for dt in self.generate_dates_until_today(2021, 1):
-                start_time, end_time = dt.split(" ")
-                # Convert to timestamp (ms)
-                start_time = int(
-                    datetime.strptime(start_time, "%Y-%m-%d").timestamp() * 1000
-                )
-                end_time = int(
-                    datetime.strptime(end_time, "%Y-%m-%d").timestamp() * 1000
-                )
-                for d in self.session.get_funding_rate_history(
-                    category="linear",
-                    symbol=sym,
-                    limit=200,
-                    startTime=start_time,
-                    endTime=end_time,
-                )["result"]["list"]:
-                    df.loc[len(df)] = d
-
-            df["fundingRateTimestamp"] = pd.to_datetime(
-                df["fundingRateTimestamp"].astype(float) * 1000000
-            )
-            df["fundingRate"] = df["fundingRate"].astype(float)
-            df = df.sort_values("fundingRateTimestamp")
-
-            # Save to csv
-            df.to_csv(f"{self._destination_dir}/bybit_data/fundingRate/{sym}.csv")
-
-    @staticmethod
     def generate_dates_by_minutes_limited(
         start_date: datetime.date, interval_minutes=1000
     ) -> (list, list):
@@ -387,9 +348,7 @@ class BybitBulkDownloader:
         print(
             f"[bold blue]Downloading {self._data_type} data from Bybit...[/bold blue]"
         )
-        if self._data_type == "fundingRate":
-            self._download_fundingrate()
-        elif self._data_type == "klines":
+        if self._data_type == "klines":
             s_list = [
                 d["symbol"]
                 for d in self.session.get_tickers(category=self._klines_category)[

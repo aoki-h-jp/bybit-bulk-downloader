@@ -14,8 +14,15 @@ from datetime import datetime, timedelta
 import requests
 from bs4 import BeautifulSoup
 from pybit.unified_trading import HTTP
-from rich import print
-from rich.progress import track
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+)
 
 
 class BybitBulkDownloader:
@@ -45,6 +52,7 @@ class BybitBulkDownloader:
         self._destination_dir = destination_dir
         self._data_type = data_type
         self.session = HTTP()
+        self.console = Console()
 
     def _get_url_from_bybit(self):
         """
@@ -67,10 +75,19 @@ class BybitBulkDownloader:
             else:
                 symbol_list.append(link_sym)
         download_list = []
-        for sym in track(symbol_list, description="Listing files"):
-            soup_sym = BeautifulSoup(requests.get(url + sym).text, "html.parser")
-            for link in soup_sym.find_all("a"):
-                download_list.append(url + sym + link.get("href"))
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=self.console,
+        ) as progress:
+            task = progress.add_task("[cyan]Listing files...", total=len(symbol_list))
+            for sym in symbol_list:
+                soup_sym = BeautifulSoup(requests.get(url + sym).text, "html.parser")
+                for link in soup_sym.find_all("a"):
+                    download_list.append(url + sym + link.get("href"))
+                progress.advance(task)
 
         return download_list
 
@@ -90,39 +107,41 @@ class BybitBulkDownloader:
         :param url: URL
         :return: None
         """
-        print(f"Downloading: {url}")
-        prefix_start = 3
-        prefix_end = 6
-        if self._data_type == "kline_for_metatrader4":
-            prefix_end += 1
-        # Create the destination directory if it does not exist
-        parts = url.split("/")
-        parts.insert(3, "bybit_data")
+        with self.console.status(f"[bold blue]Processing {url}...", spinner="dots"):
+            prefix_start = 3
+            prefix_end = 6
+            if self._data_type == "kline_for_metatrader4":
+                prefix_end += 1
+            # Create the destination directory if it does not exist
+            parts = url.split("/")
+            parts.insert(3, "bybit_data")
 
-        # Download the file
-        filepath = os.path.join(
-            str(self._destination_dir) + "/" + "/".join(parts[prefix_start:])
-        )
-        filedir = os.path.dirname(filepath)
-        # if not exists, create the directory
-        if not os.path.exists(filedir):
-            os.makedirs(filedir)
+            # Download the file
+            filepath = os.path.join(
+                str(self._destination_dir) + "/" + "/".join(parts[prefix_start:])
+            )
+            filedir = os.path.dirname(filepath)
+            # if not exists, create the directory
+            if not os.path.exists(filedir):
+                os.makedirs(filedir)
 
-        print(f"[green]Downloading: {filepath}[/green]")
-        response = requests.get(url, filepath)
-        with open(filepath, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
+            self.console.print(
+                Panel(f"[bold green]Downloading:[/bold green] {filepath}")
+            )
+            response = requests.get(url, filepath)
+            with open(filepath, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
 
-        # Decompress the file
-        print(f"[green]Unzipped: {filepath}[/green]")
-        with gzip.open(filepath, mode="rb") as gzip_file:
-            with open(filepath.replace(".gz", ""), mode="wb") as decompressed_file:
-                shutil.copyfileobj(gzip_file, decompressed_file)
+            # Decompress the file
+            self.console.print(f"[yellow]Unzipping:[/yellow] {filepath}")
+            with gzip.open(filepath, mode="rb") as gzip_file:
+                with open(filepath.replace(".gz", ""), mode="wb") as decompressed_file:
+                    shutil.copyfileobj(gzip_file, decompressed_file)
 
-        # Delete the compressed file
-        os.remove(filepath)
-        print(f"[green]Deleted: {filepath}[/green]")
+            # Delete the compressed file
+            os.remove(filepath)
+            self.console.print(f"[dim]Cleaned up:[/dim] {filepath}")
 
     def download(self, url: str):
         """
@@ -158,12 +177,30 @@ class BybitBulkDownloader:
         Execute download concurrently.
         :return: None
         """
-        print(
-            f"[bold blue]Downloading {self._data_type} data from Bybit...[/bold blue]"
+        self.console.print(
+            Panel.fit(
+                f"[bold blue]Downloading {self._data_type} data from Bybit[/bold blue]",
+                border_style="blue",
+            )
         )
-        for prefix_chunk in track(
-            self.make_chunks(self._get_url_from_bybit(), self._CHUNK_SIZE),
-            description="Downloading",
-        ):
-            with ThreadPoolExecutor() as executor:
-                executor.map(self._download, prefix_chunk)
+
+        urls = self._get_url_from_bybit()
+        chunks = self.make_chunks(urls, self._CHUNK_SIZE)
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=self.console,
+        ) as progress:
+            task = progress.add_task("[cyan]Downloading chunks...", total=len(chunks))
+
+            for prefix_chunk in chunks:
+                with ThreadPoolExecutor() as executor:
+                    executor.map(self._download, prefix_chunk)
+                progress.advance(task)
+
+        self.console.print(
+            "[bold green]Download completed successfully! ✨[/bold green]"
+        )

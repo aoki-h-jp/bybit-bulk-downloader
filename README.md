@@ -52,15 +52,6 @@ downloader = BybitBulkDownloader(data_type='trading')
 downloader.run_download()
 ```
 
-### Download all klines data
-
-```python
-from bybit_bulk_downloader.downloader import BybitBulkDownloader
-
-downloader = BybitBulkDownloader(data_type='klines')
-downloader.run_download(interval='1')
-```
-
 ## pytest
 
 ```bash
@@ -73,13 +64,12 @@ python -m pytest
 
 ### by data_type
 
-| data_type           | spot | futures   |
-| :------------------ | :--: | :--: |
-| kline_for_metatrader4           | ✅   | ❌   |
-| premium_index           | ❌   | ✅   |
-| spot_index           | ✅   | ❌   |
-| trading | ❌   | ✅   |
-| klines | 🚧   | ✅   |
+| data_type             | spot | futures |
+| :-------------------- | :--: | :--: |
+| kline_for_metatrader4 | ❌   | ✅   |
+| premium_index         | ✅   | ❌   |
+| spot_index            | ✅   | ❌   |
+| trading               | ❌   | ✅   |
 
 ## If you want to report a bug or request a feature
 

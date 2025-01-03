@@ -10,7 +10,7 @@ A Python library to efficiently and concurrently download historical data files 
 ## Installation
 
 ```bash
-pip install git+https://github.com/aoki-h-jp/bybit-bulk-downloader
+pip install bybit-bulk-downloader
 ```
 
 ## Usage
@@ -39,15 +39,6 @@ downloader.run_download()
 from bybit_bulk_downloader.downloader import BybitBulkDownloader
 
 downloader = BybitBulkDownloader(data_type='spot_index')
-downloader.run_download()
-```
-
-### Download all trading data
-
-```python
-from bybit_bulk_downloader.downloader import BybitBulkDownloader
-
-downloader = BybitBulkDownloader(data_type='trading')
 downloader.run_download()
 ```
 

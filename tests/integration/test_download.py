@@ -24,10 +24,11 @@ def dynamic_test_params():
         yield pytest.param(data_type)
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize("data_type", dynamic_test_params())
 def test_download(tmpdir, data_type):
     """
-    Test download
+    Test download with actual API
     :param tmpdir:
     :param data_type: data type
     :return:
@@ -74,13 +75,6 @@ def test_download(tmpdir, data_type):
         single_download_url = "https://public.bybit.com/trading/10000LADYSUSDT/10000LADYSUSDT2023-05-11.csv.gz"
         downloader.download(single_download_url)
         # If exists csv file on destination dir, test is passed.
-        print(
-            os.path.join(
-                tmpdir,
-                BYBIT_DATA,
-                "trading/10000LADYSUSDT/10000LADYSUSDT2023-05-11.csv",
-            )
-        )
         assert os.path.exists(
             os.path.join(
                 tmpdir,

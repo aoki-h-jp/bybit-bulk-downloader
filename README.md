@@ -51,6 +51,26 @@ downloader = BybitBulkDownloader(data_type='trading')
 downloader.run_download()
 ```
 
+### Download specific trading pair data
+
+```python
+from bybit_bulk_downloader.downloader import BybitBulkDownloader
+
+# Download BTCUSDT trading data
+downloader = BybitBulkDownloader(data_type='trading')
+downloader.download_symbol('BTCUSDT')
+```
+
+### Download all available trading pairs
+
+```python
+from bybit_bulk_downloader.downloader import BybitBulkDownloader
+
+# Download all trading pairs data
+downloader = BybitBulkDownloader(data_type='trading')
+downloader.run_download()  # This will download all available trading pairs
+```
+
 ## pytest
 
 ```bash

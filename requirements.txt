@@ -3,5 +3,4 @@ setuptools~=68.1.2
 rich~=10.16.2
 pytest~=4.6.11
 beautifulsoup4~=4.12.2
-pandas~=2.0.3
 pybit~=2.4.1

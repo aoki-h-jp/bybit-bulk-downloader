@@ -20,7 +20,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pipenv
         pip install git+https://github.com/aoki-h-jp/bybit-bulk-downloader
-        pip install pandas
         pip install pybit
         pipenv install --dev
 

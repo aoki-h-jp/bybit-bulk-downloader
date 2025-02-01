@@ -67,11 +67,10 @@ class BybitBulkDownloader:
             link_sym = link.get("href")
             if self._data_type == "kline_for_metatrader4":
                 soup_year = BeautifulSoup(
-                    requests.get(url + link.get("href")).text, "html.parser"
+                    requests.get(url + link_sym).text, "html.parser"
                 )
                 for link_year in soup_year.find_all("a"):
-                    link_sym += link_year.get("href")
-                    symbol_list.append(link_sym)
+                    symbol_list.append(link_sym + link_year.get("href"))
             else:
                 symbol_list.append(link_sym)
         download_list = []
@@ -137,7 +136,12 @@ class BybitBulkDownloader:
             # Set full file path
             filepath = os.path.join(target_dir, filename)
 
-            self.console.print(f"[bold green]Downloading:[/bold green] {filepath}")
+            decompressed_path = filepath.replace(".gz", "")
+            if os.path.exists(decompressed_path):
+                self.console.print(f"[yellow]Uncompressed path already exists and probably downloaded before, skipping:[/yellow] {decompressed_path}")
+                return
+            else:
+                self.console.print(f"[bold green]Downloading:[/bold green] {filepath}")
 
             # Download the file
             response = requests.get(url)
@@ -152,7 +156,6 @@ class BybitBulkDownloader:
             self.console.print(f"[yellow]Unzipping:[/yellow] {filepath}")
             try:
                 with gzip.open(filepath, mode="rb") as gzip_file:
-                    decompressed_path = filepath.replace(".gz", "")
                     with open(decompressed_path, mode="wb") as decompressed_file:
                         shutil.copyfileobj(gzip_file, decompressed_file)
 

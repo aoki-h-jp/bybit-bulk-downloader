@@ -18,6 +18,7 @@ def dynamic_test_params():
     for data_type in [
         "kline_for_metatrader4",
         "premium_index",
+        "spot",
         "spot_index",
         "trading",
     ]:
@@ -68,6 +69,18 @@ def test_download(tmpdir, data_type):
         assert os.path.exists(
             os.path.join(
                 tmpdir, BYBIT_DATA, "spot_index/ADAUSD/ADAUSD2022-03-24_index_price.csv"
+            )
+        )
+
+    elif data_type == "spot":
+        single_download_url = "https://public.bybit.com/spot/BTCUSDT/BTCUSDT_2022-11-10.csv.gz"
+        downloader.download(single_download_url)
+        # If exists csv file on destination dir, test is passed.
+        assert os.path.exists(
+            os.path.join(
+                tmpdir,
+                BYBIT_DATA,
+                "spot/BTCUSDT/BTCUSDT_2022-11-10.csv",
             )
         )
 

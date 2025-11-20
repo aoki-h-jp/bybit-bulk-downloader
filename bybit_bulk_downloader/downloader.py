@@ -35,6 +35,7 @@ class BybitBulkDownloader:
     _DATA_TYPE = (
         "kline_for_metatrader4",
         "premium_index",
+        "spot",
         "spot_index",
         "trading",
     )

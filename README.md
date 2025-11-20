@@ -42,6 +42,15 @@ downloader = BybitBulkDownloader(data_type='spot_index')
 downloader.run_download()
 ```
 
+### Download all spot data
+
+```python
+from bybit_bulk_downloader.downloader import BybitBulkDownloader
+
+downloader = BybitBulkDownloader(data_type='spot')
+downloader.run_download()
+```
+
 ### Download specific trading pair data
 
 ```python
@@ -78,6 +87,7 @@ python -m pytest
 | :-------------------- | :--: | :--: |
 | kline_for_metatrader4 | ❌   | ✅   |
 | premium_index         | ✅   | ❌   |
+| spot                  | ✅   | ❌   |
 | spot_index            | ✅   | ❌   |
 | trading               | ❌   | ✅   |
 

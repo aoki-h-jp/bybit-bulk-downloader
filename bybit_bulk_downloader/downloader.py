@@ -124,6 +124,12 @@ class BybitBulkDownloader:
                     symbol,
                     year,
                 )
+            elif self._data_type == "spot":
+                # For spot data: symbol/file (URL format: /spot/SYMBOL/SYMBOL_date.csv.gz)
+                symbol = url_parts[-2]
+                target_dir = os.path.join(
+                    str(self._destination_dir), "bybit_data", self._data_type, symbol
+                )
             else:
                 # For other data types: symbol/file
                 symbol = url_parts[-2]

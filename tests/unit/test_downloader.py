@@ -70,3 +70,38 @@ def test_invalid_data_type():
             data_type="invalid_type",
         )
     assert "Invalid data_type:" in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_spot_data_type(tmpdir, mock_response):
+    """Test spot data type download"""
+    downloader = BybitBulkDownloader(
+        destination_dir=tmpdir,
+        data_type="spot",
+    )
+    test_url = "https://public.bybit.com/spot/BTCUSDT/BTCUSDT2023-01-01.csv.gz"
+    downloader.download(test_url)
+
+    # Verify the request was made
+    assert mock_response.call_count == 1
+    args, kwargs = mock_response.call_args
+    assert args[0] == test_url
+
+    # Verify the file was saved correctly
+    expected_path = os.path.join(
+        tmpdir,
+        BYBIT_DATA,
+        "spot/BTCUSDT/BTCUSDT2023-01-01.csv",
+    )
+    assert os.path.exists(expected_path)
+
+
+@pytest.mark.unit
+def test_valid_spot_data_type():
+    """Test that spot is a valid data type"""
+    downloader = BybitBulkDownloader(
+        destination_dir="test",
+        data_type="spot",
+    )
+    assert downloader._data_type == "spot"
+

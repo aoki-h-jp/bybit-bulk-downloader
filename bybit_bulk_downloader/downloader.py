@@ -54,6 +54,12 @@ class BybitBulkDownloader:
         self._data_type = data_type
         self.session = HTTP()
         self.console = Console()
+        self._headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Connection": "keep-alive",
+        }
 
     def _get_url_from_bybit(self):
         """
@@ -61,14 +67,14 @@ class BybitBulkDownloader:
         :return: list of URLs to download.
         """
         url = self._BYBIT_DATA_DOWNLOAD_BASE_URL + "/" + self._data_type + "/"
-        response = requests.get(url)
+        response = requests.get(url, headers=self._headers)
         soup = BeautifulSoup(response.text, "html.parser")
         symbol_list = []
         for link in soup.find_all("a"):
             link_sym = link.get("href")
             if self._data_type == "kline_for_metatrader4":
                 soup_year = BeautifulSoup(
-                    requests.get(url + link_sym).text, "html.parser"
+                    requests.get(url + link_sym, headers=self._headers).text, "html.parser"
                 )
                 for link_year in soup_year.find_all("a"):
                     symbol_list.append(link_sym + link_year.get("href"))
@@ -84,7 +90,7 @@ class BybitBulkDownloader:
         ) as progress:
             task = progress.add_task("[cyan]Listing files...", total=len(symbol_list))
             for sym in symbol_list:
-                soup_sym = BeautifulSoup(requests.get(url + sym).text, "html.parser")
+                soup_sym = BeautifulSoup(requests.get(url + sym, headers=self._headers).text, "html.parser")
                 for link in soup_sym.find_all("a"):
                     download_list.append(url + sym + link.get("href"))
                 progress.advance(task)
@@ -151,7 +157,7 @@ class BybitBulkDownloader:
                 self.console.print(f"[bold green]Downloading:[/bold green] {filepath}")
 
             # Download the file
-            response = requests.get(url)
+            response = requests.get(url, headers=self._headers)
             if response.status_code != 200:
                 raise Exception(f"Failed to download {url}: {response.status_code}")
 
@@ -245,18 +251,18 @@ class BybitBulkDownloader:
     def download_symbol(self, symbol: str):
         """
         Download data for a specific trading pair.
-        only for trading data
+        Supports trading and spot data types
         :param symbol: Trading pair symbol (e.g., "BTCUSDT")
         """
-        if self._data_type != "trading":
+        if self._data_type not in ("trading", "spot"):
             raise ValueError(
-                "This method is only available for trading data. Please use run_download() for all data types."
+                "This method is only available for trading and spot data. Please use run_download() for other data types."
             )
 
         url = f"{self._BYBIT_DATA_DOWNLOAD_BASE_URL}/{self._data_type}/{symbol}/"
         self.console.print(f"[blue]Accessing URL: {url}[/blue]")
 
-        response = requests.get(url)
+        response = requests.get(url, headers=self._headers)
         soup = BeautifulSoup(response.text, "html.parser")
 
         download_list = []

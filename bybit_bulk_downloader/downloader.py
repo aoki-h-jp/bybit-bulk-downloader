@@ -9,6 +9,7 @@ import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
 
 # import third-party libraries
 import requests
@@ -92,7 +93,12 @@ class BybitBulkDownloader:
             for sym in symbol_list:
                 soup_sym = BeautifulSoup(requests.get(url + sym, headers=self._headers).text, "html.parser")
                 for link in soup_sym.find_all("a"):
-                    download_list.append(url + sym + link.get("href"))
+                    href = link.get("href")
+                    # Note: Bybit server returns different href formats for different data types
+                    # - spot: symbol without trailing slash (e.g., "0GUSDT"), requires explicit slash before filename
+                    # - trading, premium_index, etc.: symbol with trailing slash (e.g., "10000COQUSDT/")
+                    sym_path = urljoin(sym + "/" if not sym.endswith("/") else sym, href)
+                    download_list.append(url + sym_path)
                 progress.advance(task)
 
         return download_list
